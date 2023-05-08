@@ -1,5 +1,7 @@
 package client;
 
+import utils.Message;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -24,34 +26,14 @@ public class ClientServerListener extends Thread {
     public void run() {
         while (isRunning) {
             try {
-                String chatMessage = (String) inputStream.readObject();
-                System.out.println("\n" + chatMessage);
-                System.out.print(username + "> ");
+                Message message = (Message) inputStream.readObject();
 
-                /*ActionMessage actionMessage = null;
-                switch (chatMessage.getMessageType()) {
-
+                switch (message.getMessageType()) {
                     case MESSAGE:
-                        DisplayUtil.displayEvent(chatMessage.getMessage());
-                        DisplayUtil.displayPrompt(username);
+                        System.out.println("\n" + message.getToken() + "> " + message.getMessageBody());
+                        System.out.print(username + "> ");
                         break;
-                    case ATTACK_NOTIFY:
-                        actionMessage = chatMessage.getActionMessage();
-                        warrior.reduceHealthPoints(actionMessage.getActionPoint());
-                        break;
-                    case DEFEND_NOTIFY:
-                        actionMessage = chatMessage.getActionMessage();
-                        warrior.addHealthPoints(actionMessage.getActionPoint());
-                        break;
-                    case WARRIOR_LOADED:
-                        warrior = chatMessage.getWarrior();
-                        DisplayUtil.displayEvent(String.format("warrior [%s] loaded.", warrior));
-                        break;
-                    case WARRIOR_DEATH_NOTIFY:
-                        DisplayUtil.displayEvent(String.format("warrior [%s] is dead.", warrior.getName()));
-                        warrior = null;
-                        break;
-                    }*/
+                    }
             } catch (Exception e) {
                 System.out.println("Server has close the connection: " + e);
                 System.exit(0);

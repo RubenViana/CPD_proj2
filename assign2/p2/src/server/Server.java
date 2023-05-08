@@ -1,5 +1,8 @@
 package server;
 
+import utils.Message;
+import utils.MessageType;
+
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
@@ -68,7 +71,6 @@ public class Server {
 
             username = (String) inputStream.readObject();
 
-            //DisplayUtil.displayEvent(username + " just connected.");
             System.out.println(username + " just connected.");
             dateInString = new Date().toString();
 
@@ -84,38 +86,19 @@ public class Server {
 
             while (isRunning) {
                 try {
-                    String chatMessage = (String) inputStream.readObject();
-                    System.out.println(username + "> " + chatMessage);
+                    Message message = (Message) inputStream.readObject();
 
-                    for (Handler client : clients) {
-                        if (client == this) continue;
-                        client.outputStream.writeObject(username + "> " + chatMessage);
-                    }
-
-                    /*switch (chatMessage.getMessageType()) {
-
+                    switch (message.getMessageType()) {
                         case MESSAGE:
-                            broadcastMessageToAllClients(username + ": " + chatMessage.getMessage());
+                            System.out.println(username + "> " + message.getMessageBody());
+                            broadcastMessageToAllClients(message);
                             break;
-                        case LOGOUT:
-                            DisplayUtil.displayEvent(username + " disconnected with a LOGOUT message.");
+                        case DISCONNECT:
+                            System.out.println(username + " disconnected with a DISCONNECT message.");
                             isRunning = false;
                             break;
-                        case LOAD_WARRIOR:
-                            processLoadWarrior(chatMessage);
-                            break;
-                        case ATTACK:
-                            processAction(chatMessage, MessageType.ATTACK);
-                            break;
-                        case DEFEND:
-                            processAction(chatMessage, MessageType.DEFEND);
-                            break;
-                        case WHOISIN:
-                            displayWarriorInfo(chatMessage.getMessage());
-                            break;
-                    }*/
+                    }
                 } catch (Exception e) {
-                    //DisplayUtil.displayEvent(username + " Exception reading Streams: " + e);
                     System.out.println(username + " Exception reading Streams: " + e);
                     break;
                 }
@@ -123,7 +106,7 @@ public class Server {
 
             // remove myself from the arrayList containing the list of the
             // connected Clients
-
+            removeClientThreadFromListById(threadId);
 
             closeAllResource();
         }
@@ -140,32 +123,38 @@ public class Server {
                 if (socket != null) socket.close();
             } catch (Exception e) {
                 System.out.println("Error closing resources: " + e);
-                //DisplayUtil.displayEvent(username + " Error closing resources: " + e);
             }
         }
 
-        /*private synchronized void broadcastMessageToAllClients(String message) {
-
-            *//*ChatMessage chatMessage = new ChatMessage(MessageType.MESSAGE, message);
-
-            DisplayUtil.displayBroadcastMessage(chatMessage);*//*
-
-
+        private synchronized void broadcastMessageToAllClients(Message message) {
             // we loop in reverse order in case we would have to remove a Client
             // because it has disconnected
-            for (int i = serverClients.size(); --i >= 0; ) {
-                Handler serverThread = serverClients.get(i);
+            for (int i = clients.size(); --i >= 0; ) {
+                Handler serverThread = clients.get(i);
+                if (serverThread == this) continue;
                 // try to write to the Client if it fails removeClientThreadFromListById it from the list
                 if (!serverThread.writeMsg(message)) {
-                    serverClients.remove(i);
+                    clients.remove(i);
                     System.out.println("Disconnected client " + serverThread.username + " removed from list.");
-                    //DisplayUtil.displayEvent(String.format("Disconnected client %s removed from list.", serverThread.username));
                 }
             }
-        }*/
+        }
 
-        /*private boolean writeMsg(String chatMessage) {
+        private synchronized void removeClientThreadFromListById(int id) {
 
+            for (int i = 0; i < clients.size(); ++i) {
+
+                Handler serverThread = clients.get(i);
+                // found it
+                if (serverThread.threadId == id) {
+                    closeAllResource();
+                    clients.remove(i);
+                    return;
+                }
+            }
+        }
+
+        private boolean writeMsg(Message message) {
             if (!socket.isConnected()) {
                 closeAllResource();
                 return false;
@@ -173,16 +162,14 @@ public class Server {
 
             try {
 
-                outputStream.writeObject(chatMessage);
+                outputStream.writeObject(message);
 
             } catch (IOException e) {
                 // if an error occurs, do not abort just inform the user
                 System.out.println("Error sending message to " + username);
-                *//*DisplayUtil.displayEvent("Error sending message to " + username);
-                DisplayUtil.displayEvent(e.toString());*//*
             }
             return true;
-        }*/
+        }
 
     }
 }

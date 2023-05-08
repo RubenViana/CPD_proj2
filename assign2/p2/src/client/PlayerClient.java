@@ -1,5 +1,8 @@
 package client;
 
+import utils.Message;
+import utils.MessageType;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -40,7 +43,7 @@ public class PlayerClient {
         return true;
     }
 
-    public void sendMessage(String msg) {
+    public void sendMessage(Message msg) {
         try {
             outputStream.writeObject(msg);
         } catch (IOException e) {
@@ -85,40 +88,17 @@ public class PlayerClient {
 
 
     public boolean processInputMessage(String userInputMessage) {
-        /*if (userInputMessage.equalsIgnoreCase(MessageType.LOGOUT.getShortValue())) {
-
-            sendMessage(new ChatMessage(MessageType.LOGOUT, ""));
+        if (userInputMessage.equalsIgnoreCase(MessageType.DISCONNECT.getShortValue())) {
+            sendMessage(new Message(MessageType.DISCONNECT, "", username));
             return true;
+        }
+        else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
+            System.out.println("HElP> here is the help");
+        }
+        else {
+            sendMessage(new Message(MessageType.MESSAGE, userInputMessage, username));
+        }
 
-        } else if (userInputMessage.contains(MessageType.LOAD_WARRIOR.getShortValue())) {
-
-            loadWarrior(userInputMessage);
-
-        } else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
-
-            DisplayUtil.displayHelp();
-
-        } else if (userInputMessage.contains(MessageType.WHOISIN.getShortValue())) {
-
-            processWhoIsInCommand(userInputMessage);
-
-        } else if (userInputMessage.contains(MessageType.ATTACK.getShortValue())) {
-
-            processActionCommand(userInputMessage, MessageType.ATTACK);
-
-        } else if (userInputMessage.contains(MessageType.DEFEND.getShortValue())) {
-
-            processActionCommand(userInputMessage, MessageType.DEFEND);
-
-        } else if (userInputMessage.contains(MessageType.STATISTIC.getShortValue())) {
-
-            displayWarriorStatistic();
-
-        } else {
-            sendMessage(new ChatMessage(MessageType.MESSAGE, userInputMessage));
-        }*/
-
-        sendMessage(userInputMessage);
         return false;
     }
 }
