@@ -2,67 +2,86 @@ package Server;
 
 import java.io.*;
 import java.net.Socket;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Scanner;
 
 class ClientHandler extends Thread
 {
-    final DataInputStream inputStream;
-    final DataOutputStream outputStream;
     final Socket socket;
 
 
     // Constructor
-    public ClientHandler(Socket s, DataInputStream is, DataOutputStream os)
+    public ClientHandler(Socket socket)
     {
-        this.socket = s;
-        this.inputStream = is;
-        this.outputStream = os;
+        this.socket = socket;
     }
 
     @Override
     public void run()
     {
-        String received;
-        String toreturn;
-        while (true)
-        {
-            try {
-                // Ask user what he wants
-                outputStream.writeUTF("Server> Type exit to terminate connection.");
+        PrintWriter out = null;
+        BufferedReader in = null;
+        try {
 
-                // receive the answer from client
-                received = inputStream.readUTF();
+            // get the outputstream of client
+            out = new PrintWriter(socket.getOutputStream(), true);
 
-                if(received.equals("exit"))
-                {
-                    System.out.println("Client " + this.socket + " sends exit...");
-                    System.out.println("Closing this connection.");
-                    this.socket.close();
-                    System.out.println("Connection closed");
-                    break;
+            // get the inputstream of client
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            //send 1st msg to Client
+            out.println("Hello from Server");
+
+            // object of scanner class
+            Scanner sc = new Scanner(System.in);
+            String line = null;
+
+            while (true) {
+
+                // writing from server
+
+                line = sc.nextLine();
+                // sending the user input to server
+                out.println(line);
+                out.flush();
+                
+
+
+                if ((in.ready())) {
+                    line = in.readLine();
+
+                    if (line.equals("exit")) {
+                        System.out.println("Client " + this.socket + " sends exit...");
+                        System.out.println("Closing this connection.");
+                        this.socket.close();
+                        System.out.println("Connection closed");
+                        break;
+                    }
+
+                    // writing the received message from
+                    // client
+                    System.out.println("Client> " + line);
                 }
 
-                // write on output stream based on the
-                // answer from the client
 
-                System.out.println("Client> " + received);
-
-
-            } catch (IOException e) {
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+                if (in != null) {
+                    in.close();
+                    socket.close();
+                }
+            }
+            catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
-        try
-        {
-            // closing resources
-            this.inputStream.close();
-            this.outputStream.close();
-
-        }catch(IOException e){
-            e.printStackTrace();
-        }
     }
 }
+

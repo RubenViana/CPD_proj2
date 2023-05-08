@@ -2,43 +2,59 @@ package Server;
 
 import java.io.*;
 import java.net.*;
- 
+import java.util.ArrayList;
+
 /**
  * This program demonstrates a simple TCP/IP socket server.
  *
  * @author www.codejava.net
  */
 public class Server {
- 
+
+    private static ArrayList<ClientHandler> serverClients = new ArrayList<ClientHandler>();
     public static void main(String[] args) throws IOException {
         if (args.length < 1) return;
  
         int port = Integer.parseInt(args[0]);
+        ServerSocket serverSocket = null;
  
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
- 
+        try {
+            serverSocket = new ServerSocket(port);
+
             System.out.println("Server is listening on port " + port);
  
             while (true) {
-                Socket socket = serverSocket.accept();
+                Socket client = serverSocket.accept();
 
-                System.out.println("A new client is connected : " + socket);
-
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+                System.out.println("A new client is connected : " + client);
 
                 System.out.println("Assigning new thread for this client");
 
                 // create a new thread object
-                Thread t = new ClientHandler(socket, input, output);
+                ClientHandler clientSock = new ClientHandler(client);
 
-                // Invoking the start() method
-                t.start();
+                // add client to serverClients
+                serverClients.add(clientSock);
+
+                // This thread will handle the client
+                // separately
+                new Thread(clientSock).start();
+
             }
  
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
+        }
+        finally {
+            if (serverSocket != null) {
+                try {
+                    serverSocket.close();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

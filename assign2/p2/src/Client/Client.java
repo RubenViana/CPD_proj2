@@ -17,30 +17,34 @@ public class Client {
         String hostname = args[0];
         int port = Integer.parseInt(args[1]);
 
-        try
-        {
-            Scanner scn = new Scanner(System.in);
+        // establish a connection by providing host and port
+        // number
+        try (Socket socket = new Socket(hostname, port)) {
 
-            // establish the connection with server port 5056
-            Socket socket = new Socket(hostname, port);
+            // writing to server
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-            // obtaining input and out streams
-            DataInputStream inputStream = new DataInputStream(socket.getInputStream());
-            DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+            // reading from server
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            // the following loop performs the exchange of
-            // information between client and client handler
-            while (true)
-            {
-                System.out.println(inputStream.readUTF());
-                System.out.print("Client> ");
-                String tosend = scn.nextLine();
-                outputStream.writeUTF(tosend);
+            // object of scanner class
+            Scanner sc = new Scanner(System.in);
 
-                // If client sends exit,close this connection
-                // and then break from the while loop
-                if(tosend.equals("exit"))
-                {
+            String line = null;
+
+            while (true) {
+                // displaying server reply
+                if ((in.ready()))
+                    System.out.println("Server> " + in.readLine());
+
+                // reading from user
+
+                line = sc.nextLine();
+                // sending the user input to server
+                out.println(line);
+                out.flush();
+
+                if (line.equals("exit")) {
                     System.out.println("Closing this connection : " + socket);
                     socket.close();
                     System.out.println("Connection closed");
@@ -49,11 +53,12 @@ public class Client {
 
             }
 
-            // closing resources
-            scn.close();
-            inputStream.close();
-            outputStream.close();
-        }catch(Exception e){
+            // closing the scanner, in, out objects
+            sc.close();
+            in.close();
+            out.close();
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
