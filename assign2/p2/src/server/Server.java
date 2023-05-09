@@ -8,12 +8,14 @@ import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Server {
 
     private static int CONNECTION_ID;
+    private static int N_GAMES;
 
-    private static List<Handler> clients = new ArrayList<Handler>();
+    private static List<PlayerHandler> clientsQueue = new ArrayList<PlayerHandler>();
 
     public static void main(String[] args) throws Exception {
 
@@ -23,25 +25,37 @@ public class Server {
 
         System.out.println("The server is running on port " + port + " ...");
         var pool = Executors.newFixedThreadPool(500);
+        var scheduler = Executors.newSingleThreadScheduledExecutor();
         try (var listener = new ServerSocket(port)) {
             while (true) {
-                Handler handler = new Handler(listener.accept(), ++CONNECTION_ID);
+                scheduler.scheduleAtFixedRate(() -> {
+                            if (clientsQueue.size() >= 2) {
+                                System.out.println("Creating Game " + ++N_GAMES);
+                                ArrayList<PlayerHandler> gamePlayers = new ArrayList<PlayerHandler>();
+                                for (int i = 0; i < 2; i++) {
+                                    gamePlayers.add(clientsQueue.get(0));
+                                    clientsQueue.remove(0);
+                                }
+                                Game game = new Game(gamePlayers, N_GAMES);
+                                for (PlayerHandler player : gamePlayers) {
+                                    player.setGame(game);
+                                }
+
+                                for (PlayerHandler player : game.players)
+                                    pool.execute(player);
+                            }
+                        }, 0, 5, TimeUnit.SECONDS);
+                AuthHandler handler = new AuthHandler(listener.accept(), ++CONNECTION_ID);
                 pool.execute(handler);
-                clients.add(handler);
             }
         } catch (Exception e) {
             String msg = (new Date()) + " Exception on new ServerSocket: " + e + "\n";
             System.out.println(msg);
             //DisplayUtil.displayEvent(msg);
         }
-
     }
 
-
-    /**
-     * The client handler task.
-     */
-    private static class Handler implements Runnable {
+    private static class AuthHandler implements Runnable{
         private Socket socket;
         private ObjectInputStream inputStream;
 
@@ -62,16 +76,13 @@ public class Server {
          * work is done in the run method. Remember the constructor is called from the
          * server's main method, so this has to be as short as possible.
          */
-        public Handler(Socket socket, int threadId) throws Exception{
+        public AuthHandler(Socket socket, int threadId) throws Exception{
 
             this.socket = socket;
             this.threadId = threadId;
 
             initializeInputOutputStreams(socket);
 
-            username = (String) inputStream.readObject();
-
-            System.out.println(username + " just connected.");
             dateInString = new Date().toString();
 
         }
@@ -89,26 +100,30 @@ public class Server {
                     Message message = (Message) inputStream.readObject();
 
                     switch (message.getMessageType()) {
-                        case MESSAGE:
-                            System.out.println(username + "> " + message.getMessageBody());
-                            broadcastMessageToAllClients(message);
+                        case LOGIN:
+                            //TODO: deal with login! separate class Auth...
+                            System.out.println("Login");
+                            username = message.getMessageBody();
+                            boolean login = true; //testing only
+                            if (login == true) {
+                                write(new Message(MessageType.MESSAGE, "Login Successful", "server"));
+                                System.out.println("[" + displayTime.format(new Date()) + "] " + username + " just logged in and added to queue");
+                                clientsQueue.add(new PlayerHandler(socket, inputStream, outputStream, username));
+                                return;
+                            }
                             break;
-                        case DISCONNECT:
-                            System.out.println(username + " disconnected with a DISCONNECT message.");
-                            isRunning = false;
+                        case REGISTER:
+                            //TODO: deal with register! separate class Auth...
+                            System.out.println("Register");
+                            break;
+                        default:
                             break;
                     }
                 } catch (Exception e) {
-                    System.out.println(username + " Exception reading Streams: " + e);
+                    System.out.println(socket + " Exception reading Streams: " + e);
                     break;
                 }
             }
-
-            // remove myself from the arrayList containing the list of the
-            // connected Clients
-            removeClientThreadFromListById(threadId);
-
-            closeAllResource();
         }
 
         private void initializeInputOutputStreams(Socket socket) throws IOException {
@@ -116,60 +131,16 @@ public class Server {
             inputStream = new ObjectInputStream(socket.getInputStream());
         }
 
-        public void closeAllResource() {
+        private boolean write(Message message) {
             try {
-                if (outputStream != null) outputStream.close();
-                if (inputStream != null) inputStream.close();
-                if (socket != null) socket.close();
-            } catch (Exception e) {
-                System.out.println("Error closing resources: " + e);
-            }
-        }
-
-        private synchronized void broadcastMessageToAllClients(Message message) {
-            // we loop in reverse order in case we would have to remove a Client
-            // because it has disconnected
-            for (int i = clients.size(); --i >= 0; ) {
-                Handler serverThread = clients.get(i);
-                if (serverThread == this) continue;
-                // try to write to the Client if it fails removeClientThreadFromListById it from the list
-                if (!serverThread.writeMsg(message)) {
-                    clients.remove(i);
-                    System.out.println("Disconnected client " + serverThread.username + " removed from list.");
-                }
-            }
-        }
-
-        private synchronized void removeClientThreadFromListById(int id) {
-
-            for (int i = 0; i < clients.size(); ++i) {
-
-                Handler serverThread = clients.get(i);
-                // found it
-                if (serverThread.threadId == id) {
-                    closeAllResource();
-                    clients.remove(i);
-                    return;
-                }
-            }
-        }
-
-        private boolean writeMsg(Message message) {
-            if (!socket.isConnected()) {
-                closeAllResource();
-                return false;
-            }
-
-            try {
-
                 outputStream.writeObject(message);
-
             } catch (IOException e) {
                 // if an error occurs, do not abort just inform the user
-                System.out.println("Error sending message to " + username);
+                System.out.println("Error sending message to " + socket);
             }
             return true;
         }
 
     }
+
 }

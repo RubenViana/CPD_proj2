@@ -91,8 +91,10 @@ public class PlayerClient {
         if (userInputMessage.equalsIgnoreCase(MessageType.DISCONNECT.getShortValue())) {
             sendMessage(new Message(MessageType.DISCONNECT, "", username));
             return true;
-        }
-        else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
+        } else if (userInputMessage.equalsIgnoreCase(MessageType.LOGIN.getShortValue())) {
+            sendMessage(new Message(MessageType.LOGIN, username, ""));
+
+        } else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
             System.out.println("HElP> here is the help");
         }
         else {

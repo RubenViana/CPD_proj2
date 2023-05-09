@@ -17,8 +17,6 @@ public class ClientServerListener extends Thread {
         this.inputStream = inputStream;
         this.outputStream = outputStream;
         isRunning = true;
-
-        sendUsernameToServer();
     }
 
 
@@ -41,14 +39,6 @@ public class ClientServerListener extends Thread {
         }
     }
 
-
-    private void sendUsernameToServer() throws IOException {
-        try {
-            outputStream.writeObject(username);
-        } catch (IOException e) {
-            System.out.println("Exception doing login : " + e);
-        }
-    }
 
     public void setRunning(boolean isRunning) {
         this.isRunning = isRunning;
