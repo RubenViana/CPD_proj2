@@ -35,7 +35,7 @@ public class PlayerHandler implements Runnable{
                         System.out.println("[Game" + game.gameNumber + "] " + username + "> " + message.getMessageBody());
                         if (game.guess(message.getMessageBody())){
                             System.out.println("[Game" + game.gameNumber + "] " + username + " guessed the word!");
-                            write(new Message(MessageType.MESSAGE, username + " You the word!", "Game" + game.gameNumber));
+                            write(new Message(MessageType.MESSAGE,  "You guessed the word!", "Game" + game.gameNumber));
                             broadcastMessageToAllClients(new Message(MessageType.MESSAGE, username + " guessed the word!", "Game" + game.gameNumber));
                         }
                         break;
