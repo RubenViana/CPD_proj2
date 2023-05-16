@@ -1,5 +1,6 @@
 package client;
 
+import models.Player;
 import utils.Message;
 import utils.MessageType;
 
@@ -13,14 +14,14 @@ public class PlayerClient {
     private ObjectOutputStream outputStream;
     private Socket socket;
     private String server;
-    private String username;
+    private Player player;
     private int port;
     ClientServerListener serverListener;
 
     public PlayerClient(ConnectionInfo connectionInformation) {
         this.server = connectionInformation.getServerAddress();
         this.port = connectionInformation.getPortNumber();
-        this.username = connectionInformation.getUserName();
+        this.player = connectionInformation.player;
     }
 
     public boolean initialize() {
@@ -30,8 +31,10 @@ public class PlayerClient {
 
             initializeInputOutputObjectStreams();
 
-            serverListener = new ClientServerListener(username, inputStream, outputStream);
+            serverListener = new ClientServerListener(player.username, inputStream, outputStream);
             serverListener.start();
+
+            sendMessage(new Message(MessageType.LOGIN, player.username + " " + player.password, player.username));
 
 
         } catch (IOException e) {
@@ -83,22 +86,20 @@ public class PlayerClient {
     }
 
     public String getUsername() {
-        return username;
+        return player.username;
     }
 
 
     public boolean processInputMessage(String userInputMessage) {
         if (userInputMessage.equalsIgnoreCase(MessageType.DISCONNECT.getShortValue())) {
-            sendMessage(new Message(MessageType.DISCONNECT, "", username));
+            sendMessage(new Message(MessageType.DISCONNECT, "", player.username));
             return true;
-        } else if (userInputMessage.equalsIgnoreCase(MessageType.LOGIN.getShortValue())) {
-            sendMessage(new Message(MessageType.LOGIN, username, ""));
-
-        } else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
+        }
+        else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
             System.out.println("HElP> here is the help");
         }
         else {
-            sendMessage(new Message(MessageType.MESSAGE, userInputMessage, username));
+            sendMessage(new Message(MessageType.MESSAGE, userInputMessage, player.username));
         }
 
         return false;

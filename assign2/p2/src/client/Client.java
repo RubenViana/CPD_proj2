@@ -1,5 +1,7 @@
 package client;
 
+import models.Player;
+
 import java.net.*;
 import java.io.*;
 import java.util.Scanner;
@@ -43,8 +45,9 @@ public class Client {
             System.out.println("Usage: java Client <host> <port> <username> <password>");
             return null;
         }
+        Player player = new Player(args[2], args[3], "");
 
-        ConnectionInfo connectionInformation = new ConnectionInfo(args[0], args[1], args[2]);
+        ConnectionInfo connectionInformation = new ConnectionInfo(args[0], args[1], player);
 
 
         return connectionInformation;

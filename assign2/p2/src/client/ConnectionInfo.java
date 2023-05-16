@@ -1,14 +1,17 @@
 package client;
 
+import models.Player;
+
 public class ConnectionInfo {
     private int portNumber;
     private String serverAddress;
-    private String userName;
 
-    public ConnectionInfo(String serverAddress, String portNumber, String userName) {
+    public Player player;
+
+    public ConnectionInfo(String serverAddress, String portNumber, Player player) {
         this.portNumber = Integer.parseInt(portNumber);
         this.serverAddress = serverAddress;
-        this.userName = userName;
+        this.player = player;
     }
 
     public int getPortNumber() {
@@ -17,10 +20,6 @@ public class ConnectionInfo {
 
     public String getServerAddress() {
         return serverAddress;
-    }
-
-    public String getUserName() {
-        return userName;
     }
 
 }

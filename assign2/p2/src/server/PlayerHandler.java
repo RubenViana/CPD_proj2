@@ -1,5 +1,6 @@
 package server;
 
+import models.Player;
 import utils.Message;
 import utils.MessageType;
 
@@ -13,48 +14,72 @@ public class PlayerHandler implements Runnable{
     private Socket socket;
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
-    public String username; //TODO: add more info here!
-    private boolean isRunning = true;
-    private Game game;
+    public Player player;
+    public Game game = null;
 
-    private ArrayList<PlayerHandler> otherPlayers = new ArrayList<PlayerHandler>();
-
-    public PlayerHandler(Socket socket, ObjectInputStream inputStream, ObjectOutputStream outputStream, String username) throws IOException{
-        this.username = username;
+    public PlayerHandler(Socket socket) throws IOException {
         this.socket = socket;
-        this.inputStream = inputStream;
-        this.outputStream = outputStream;
+        initializeInputOutputStreams(socket);
     }
 
+    @Override
     public void run() {
-        while (isRunning) {
+        try {
+            authenticate();
+
+            addToQueue();
+
+            playGame();
+        }
+        catch (IOException e) {
+            System.out.println("Error in PlayerHandler: " + e);
+            closeAllResource();
+        }
+    }
+
+    private void addToQueue() {
+        Server.addToQueue(this);
+        write(new Message(MessageType.MESSAGE, "JOIN_QUEUE", "Server"));
+    }
+
+    private void playGame() {
+        while (true){
             try {
                 Message message = (Message) inputStream.readObject();
+
                 switch (message.getMessageType()) {
                     case MESSAGE:
-                        System.out.println("[Game" + game.gameNumber + "] " + username + "> " + message.getMessageBody());
-                        if (game.guess(message.getMessageBody())){
-                            System.out.println("[Game" + game.gameNumber + "] " + username + " guessed the word!");
-                            write(new Message(MessageType.MESSAGE,  "You guessed the word!", "Game" + game.gameNumber));
-                            broadcastMessageToAllClients(new Message(MessageType.MESSAGE, username + " guessed the word!", "Game" + game.gameNumber));
+                        if (game != null){
+                            System.out.println("[Game" + game.gameNumber + "] " + player.username + "> " + message.getMessageBody());
+                            broadcastMessage(message);
                         }
                         break;
                     case DISCONNECT:
-                        System.out.println(username + " disconnected with a DISCONNECT message.");
-                        isRunning = false;
-                        break;
+                        System.out.println("Client " + player.username + " has disconnected");
+                        game.removePlayer(this);
+                        if (game.players.size() == 0){
+                            game.close();
+                        }
+                        game = null;
+                        closeAllResource();
+                        return;
                 }
             } catch (Exception e) {
-                System.out.println(username + " Exception reading Streams: " + e);
+                System.out.println("Client " + player.username + " lost connection");
+                closeAllResource();
                 break;
             }
         }
+    }
 
-        // remove myself from the arrayList containing the list of the
-        // connected Clients
-        //removeClientThreadFromListById(threadId);
-
-        closeAllResource();
+    private void authenticate() throws IOException{
+        try {
+            Message message = (Message) inputStream.readObject();
+            this.player = new Player(message.getMessageBody().split(" ")[0], message.getMessageBody().split(" ")[1], message.getToken());
+            System.out.println("Client " + player.username + " has connected");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean write(Message message) {
@@ -67,9 +92,19 @@ public class PlayerHandler implements Runnable{
             outputStream.writeObject(message);
         } catch (IOException e) {
             // if an error occurs, do not abort just inform the user
-            System.out.println("Error sending message to " + username);
+            System.out.println("Error sending message to " + player.username);
         }
         return true;
+    }
+
+    public Message read() {
+        Message message;
+        try {
+            message = (Message) inputStream.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return message;
     }
 
     public void closeAllResource() {
@@ -82,39 +117,15 @@ public class PlayerHandler implements Runnable{
         }
     }
 
-    public void setOtherPlayers (ArrayList<PlayerHandler> players) {
-        otherPlayers = players;
+    private void initializeInputOutputStreams(Socket socket) throws IOException {
+        outputStream = new ObjectOutputStream(socket.getOutputStream());
+        inputStream = new ObjectInputStream(socket.getInputStream());
     }
 
-    public void setGame (Game game) {
-        this.game = game;
-        this.otherPlayers = game.players;
-    }
-
-    private synchronized void broadcastMessageToAllClients(Message message) {
-        // we loop in reverse order in case we would have to remove a Client
-        // because it has disconnected
-        for (int i = otherPlayers.size(); --i >= 0; ) {
-            PlayerHandler client = otherPlayers.get(i);
-            if (client == this) continue;
-            // try to write to the Client if it fails removeClientThreadFromListById it from the list
-            if (!client.write(message)) {
-                otherPlayers.remove(i);
-                System.out.println("Disconnected client " + client.username + " removed from list.");
-            }
+    private void broadcastMessage(Message message) {
+        for (PlayerHandler playerHandler : game.players) {
+            if (playerHandler == this) continue;
+            playerHandler.write(message);
         }
     }
-
-    /*private synchronized void removeClientThreadFromListById(int id) {
-        for (int i = 0; i < clients.size(); ++i) {
-
-            Server.Handler serverThread = clients.get(i);
-            // found it
-            if (serverThread.threadId == id) {
-                closeAllResource();
-                clients.remove(i);
-                return;
-            }
-        }
-    }*/
 }
