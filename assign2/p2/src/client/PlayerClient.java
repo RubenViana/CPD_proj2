@@ -1,6 +1,6 @@
 package client;
 
-import models.Player;
+import models.ClientModel;
 import utils.Message;
 import utils.MessageType;
 
@@ -14,14 +14,14 @@ public class PlayerClient {
     private ObjectOutputStream outputStream;
     private Socket socket;
     private String server;
-    private Player player;
+    private ClientModel player;
     private int port;
     ClientServerListener serverListener;
 
     public PlayerClient(ConnectionInfo connectionInformation) {
         this.server = connectionInformation.getServerAddress();
         this.port = connectionInformation.getPortNumber();
-        this.player = connectionInformation.player;
+        this.player = connectionInformation.client;
     }
 
     public boolean initialize() {
@@ -34,6 +34,7 @@ public class PlayerClient {
             serverListener = new ClientServerListener(player.username, inputStream, outputStream);
             serverListener.start();
 
+            //TODO: retrive the player's token from a user-token database and send it in the message
             sendMessage(new Message(MessageType.LOGIN, player.username + " " + player.password, player.username));
 
 

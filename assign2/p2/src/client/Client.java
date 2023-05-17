@@ -1,6 +1,6 @@
 package client;
 
-import models.Player;
+import models.ClientModel;
 
 import java.net.*;
 import java.io.*;
@@ -20,7 +20,7 @@ public class Client {
 
                 //DisplayUtil.displayHelp();
 
-                while(true) {
+                while(playerClient.serverListener.isRunning) {
 
                     //DisplayUtil.displayPrompt(warriorClient.getUsername());
                     System.out.print(playerClient.getUsername() + "> ");
@@ -45,9 +45,9 @@ public class Client {
             System.out.println("Usage: java Client <host> <port> <username> <password>");
             return null;
         }
-        Player player = new Player(args[2], args[3], "");
+        ClientModel client = new ClientModel(args[2], args[3], "");
 
-        ConnectionInfo connectionInformation = new ConnectionInfo(args[0], args[1], player);
+        ConnectionInfo connectionInformation = new ConnectionInfo(args[0], args[1], client);
 
 
         return connectionInformation;

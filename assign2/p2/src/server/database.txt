@@ -1,0 +1,3 @@
+rubis;pass;1234
+bala;pass;1234
+magcus;pass;1234

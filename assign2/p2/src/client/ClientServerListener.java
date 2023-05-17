@@ -10,7 +10,7 @@ public class ClientServerListener extends Thread {
     private String username;
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
-    private boolean isRunning;
+    public boolean isRunning;
 
     public ClientServerListener(String username, ObjectInputStream inputStream, ObjectOutputStream outputStream) throws IOException {
         this.username = username;
@@ -31,6 +31,15 @@ public class ClientServerListener extends Thread {
                         System.out.println("\n" + message.getToken() + "> " + message.getMessageBody());
                         System.out.print(username + "> ");
                         break;
+                    case LOGIN:
+                        if (message.getMessageBody().equals("UNSUCCESSFUL")){
+                            System.out.println("Authentication Failed!");
+                            isRunning = false;
+                            System.exit(0);
+                        }
+                        else if (message.getMessageBody().equals("SUCCESSFUL")){
+                            System.out.println("Authentication Success!");
+                        }
                     }
             } catch (Exception e) {
                 System.out.println("Server has close the connection: " + e);

@@ -1,6 +1,6 @@
 package server;
 
-import models.Player;
+import models.ClientModel;
 import utils.Message;
 import utils.MessageType;
 
@@ -14,7 +14,7 @@ public class PlayerHandler implements Runnable{
     private Socket socket;
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
-    public Player player;
+    public ClientModel player;
     public Game game = null;
 
     public PlayerHandler(Socket socket) throws IOException {
@@ -25,11 +25,10 @@ public class PlayerHandler implements Runnable{
     @Override
     public void run() {
         try {
-            authenticate();
-
-            addToQueue();
-
-            playGame();
+            if (authenticate()) {
+                addToQueue();
+                playGame();
+            }
         }
         catch (IOException e) {
             System.out.println("Error in PlayerHandler: " + e);
@@ -72,14 +71,34 @@ public class PlayerHandler implements Runnable{
         }
     }
 
-    private void authenticate() throws IOException{
+    private boolean authenticate() throws IOException{
+        boolean isValid = false;
         try {
+            Authentication authentication = new Authentication();
             Message message = (Message) inputStream.readObject();
-            this.player = new Player(message.getMessageBody().split(" ")[0], message.getMessageBody().split(" ")[1], message.getToken());
-            System.out.println("Client " + player.username + " has connected");
+
+            switch (message.getMessageType()) {
+                case LOGIN:
+                    this.player = authentication.login(message);
+                    if (this.player == null){
+                        write(new Message(MessageType.LOGIN, "UNSUCCESSFUL", "server"));
+                        System.out.println("Failed Connection: " + socket);
+                    }
+                    else {
+                        write(new Message(MessageType.LOGIN, "SUCCESSFUL", "server"));
+                        System.out.println("Client " + player.username + " has connected");
+                        isValid = true;
+                    }
+                    break;
+                case REGISTER:
+                    System.out.println("Register");
+                    break;
+            }
+
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+        return isValid;
     }
 
     public boolean write(Message message) {

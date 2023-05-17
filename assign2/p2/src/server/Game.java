@@ -1,6 +1,5 @@
 package server;
 
-import models.Player;
 import utils.Message;
 import utils.MessageType;
 
@@ -97,18 +96,6 @@ public class Game {
             player.write(new Message(MessageType.MESSAGE, question, "Game" + gameNumber));
     }
 
-    private Map<Player, Integer> receiveAnswers() {
-        // TODO: Receive answers from all players and return a map of player -> answer
-        return null; // Placeholder
-    }
-
-    private void updateScores(String question, Map<Player, Integer> answers) {
-        // TODO: Update scores based on the question and answers
-    }
-
-    public int getScore(Player player) {
-        return 1; //scores.getOrDefault(player, 0);
-    }
 
 
 }

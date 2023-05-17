@@ -1,17 +1,17 @@
 package client;
 
-import models.Player;
+import models.ClientModel;
 
 public class ConnectionInfo {
     private int portNumber;
     private String serverAddress;
 
-    public Player player;
+    public ClientModel client;
 
-    public ConnectionInfo(String serverAddress, String portNumber, Player player) {
+    public ConnectionInfo(String serverAddress, String portNumber, ClientModel client) {
         this.portNumber = Integer.parseInt(portNumber);
         this.serverAddress = serverAddress;
-        this.player = player;
+        this.client = client;
     }
 
     public int getPortNumber() {

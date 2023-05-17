@@ -1,9 +1,5 @@
 package server;
 
-import models.Player;
-import utils.Message;
-import utils.MessageType;
-
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
@@ -37,6 +33,7 @@ public class Server {
         ExecutorService pool = Executors.newFixedThreadPool(500);
         var scheduler = Executors.newSingleThreadScheduledExecutor();
         try (var listener = new ServerSocket(port)) {
+            pool.execute(new serverAdmin());
             while (true) {
                 scheduler.scheduleAtFixedRate(() -> {
                     if (playerQueue.size() >= 2) {
@@ -63,5 +60,23 @@ public class Server {
 
     public static void addToQueue(PlayerHandler playerHandler) {
         playerQueue.add(playerHandler);
+    }
+
+    private class serverAdmin implements Runnable {
+        public void run() {
+            Scanner scanner = new Scanner(System.in);
+            while (true) {
+                System.out.print("> ");
+                String input = scanner.nextLine();
+                if (input.equals("exit")) {
+                    System.out.println("Exiting...");
+                    System.exit(0);
+                }
+                else if (input.equals("games")) {
+                    System.out.println("Number Active Games: " + activeGames.size());
+                }
+                //TODO: process input commands such as "exit", "list_games", "list_players", etc.
+            }
+        }
     }
 }
