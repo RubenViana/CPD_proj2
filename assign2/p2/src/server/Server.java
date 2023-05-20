@@ -104,8 +104,8 @@ public class Server {
             Scanner scanner = new Scanner(System.in);
             while (isRunning) {
                 //System.out.print("admin> ");
-                String input = scanner.nextLine();
-                switch (input){
+                String[] input = scanner.nextLine().split(" ");
+                switch (input[0]){
                     case ".c":
                         System.out.println("COMMANDS");
                         System.out.println("    .si -> Display Server Info");
@@ -137,6 +137,12 @@ public class Server {
                             System.out.println("        - Players:");
                             for (PlayerHandler p : g.players)
                                 System.out.println("            - " + p.player.username);
+                        }
+                        break;
+                    case ".eg":
+                        for (Game g : activeGames){
+                            if (g.gameNumber == Integer.parseInt(input[1]))
+                                g.close();
                         }
                         break;
                 }
