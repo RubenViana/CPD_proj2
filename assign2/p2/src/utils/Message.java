@@ -6,12 +6,12 @@ import java.io.Serializable;
 public class Message implements Serializable {
     MessageType messageType;
     String messageBody;
-    String token;
+    String token_username;
 
-    public Message(MessageType messageType, String messageBody, String token) {
+    public Message(MessageType messageType, String messageBody, String token_username) {
         this.messageType = messageType;
         this.messageBody = messageBody;
-        this.token = token;
+        this.token_username = token_username;
     }
 
     public MessageType getMessageType() {
@@ -22,14 +22,14 @@ public class Message implements Serializable {
         return messageBody;
     }
 
-    public String getToken() {
-        return token;
+    public String getTokenUsername() {
+        return token_username;
     }
 
     @Override
     public String toString() {
         return "ChatMessage{" +
-                "token=" + token +
+                "token_username=" + token_username +
                 ", messageType=" + messageType +
                 ", messageBody=" + messageBody +
                 '}';

@@ -21,12 +21,8 @@ public class Game {
     public ArrayList<PlayerHandler> players;
 
     public int gameNumber;
-
+    private Date startTime;
     private SimpleDateFormat displayTime = new SimpleDateFormat("HH:mm:ss");
-    //private Map<models.Player, Integer> scores;
-    private ArrayList<String> questions = new ArrayList<String>();
-
-    //private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs a handler thread, squirreling away the socket. All the interesting
@@ -36,8 +32,7 @@ public class Game {
     public Game(ArrayList<PlayerHandler> clients, int gameNumber) {
         this.players = clients;
         this.gameNumber = gameNumber;
-        //scores = new HashMap<>();
-        loadQuestions();
+        startTime = new Date();
         for (PlayerHandler player : players) {
             player.game = this;
         }
@@ -47,20 +42,38 @@ public class Game {
         }, 0, 5, TimeUnit.SECONDS);*/
     }
 
+    public String timeAlive(){
+        return displayTime.format(new Date(new Date().getTime() - startTime.getTime() - 3600000));
+    }
+
     public boolean addPlayer(PlayerHandler player) {
-        if (!players.contains(player)){
-            players.add(player);
-            return true;
+        try {
+            Server.lock.lock();
+            if (!players.contains(player)){
+                players.add(player);
+                return true;
+            }
+            return false;
         }
-        return false;
+        finally {
+            Server.lock.unlock();
+        }
+
     }
 
     public boolean removePlayer(PlayerHandler player) {
-        if (players.contains(player)){
-            players.remove(player);
-            return true;
+        try {
+            Server.lock.lock();
+            if (players.contains(player)){
+                players.remove(player);
+                return true;
+            }
+            return false;
         }
-        return false;
+        finally {
+            Server.lock.unlock();
+        }
+
     }
 
     public void broadcastMessage(Message message) {
@@ -69,8 +82,7 @@ public class Game {
     }
 
     public void close() {
-        broadcastMessage(new Message(MessageType.MESSAGE, "Game " + gameNumber + " has ended", "Game" + gameNumber));
-        System.out.println("Game " + gameNumber + " has ended");
+        System.out.println("[" + displayTime.format(new Date()) + "] " + "Game " + gameNumber + " has ended");
 
         for (PlayerHandler player : players)
             player.closeAllResource();
@@ -79,23 +91,4 @@ public class Game {
 
         Server.activeGames.remove(this);
     }
-
-
-    private void loadQuestions() {
-        // Shuffle and select a subset of questions from the question bank for this game
-        /*Collections.shuffle(questionBank);
-        questions.addAll(questionBank.subList(0, GAME_QUESTIONS));*/
-        questions.add("What is the capital of France?");
-        questions.add("What is the capital of Spain?");
-        questions.add("What is the capital of Germany?");
-    }
-
-    private void sendQuestion(String question) {
-        // TODO: Send the question to all players
-        for (PlayerHandler player : players)
-            player.write(new Message(MessageType.MESSAGE, question, "Game" + gameNumber));
-    }
-
-
-
 }

@@ -14,7 +14,7 @@ public class PlayerClient {
     private ObjectOutputStream outputStream;
     private Socket socket;
     private String server;
-    private ClientModel player;
+    public ClientModel player;
     private int port;
     ClientServerListener serverListener;
 
@@ -33,9 +33,6 @@ public class PlayerClient {
 
             serverListener = new ClientServerListener(player.username, inputStream, outputStream);
             serverListener.start();
-
-            //TODO: retrive the player's token from a user-token database and send it in the message
-            sendMessage(new Message(MessageType.LOGIN, player.username + " " + player.password, player.username));
 
 
         } catch (IOException e) {
@@ -92,11 +89,14 @@ public class PlayerClient {
 
 
     public boolean processInputMessage(String userInputMessage) {
-        if (userInputMessage.equalsIgnoreCase(MessageType.DISCONNECT.getShortValue())) {
+        if (userInputMessage.equalsIgnoreCase(".dis")) {
             sendMessage(new Message(MessageType.DISCONNECT, "", player.username));
             return true;
         }
-        else if (userInputMessage.contains(MessageType.HELP.getShortValue())) {
+        else if (userInputMessage.equals(".gp")){
+            sendMessage(new Message(MessageType.MESSAGE, ".gp", player.username));
+        }
+        else if (userInputMessage.contains(".h")) {
             System.out.println("HElP> here is the help");
         }
         else {

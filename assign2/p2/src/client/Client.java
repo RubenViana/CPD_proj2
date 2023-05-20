@@ -1,12 +1,15 @@
 package client;
 
 import models.ClientModel;
+import utils.Message;
+import utils.MessageType;
 
 import java.net.*;
 import java.io.*;
 import java.util.Scanner;
 
 public class Client {
+    public static ClientDatabase clientDB;
     public static void main(String[] args) {
 
         ConnectionInfo connectionInfo = createConnectionInformation(args);
@@ -16,13 +19,16 @@ public class Client {
 
             if(playerClient.initialize()) {
 
-                Scanner scan = new Scanner(System.in);
+                //Authentication Message
+                if (args[2].equals("-l"))
+                    playerClient.sendMessage(new Message(MessageType.LOGIN, playerClient.player.username + " " + playerClient.player.password, playerClient.player.token));
+                else if (args[2].equals("-r"))
+                    playerClient.sendMessage(new Message(MessageType.REGISTER, playerClient.player.username + " " + playerClient.player.password, playerClient.player.token));
 
-                //DisplayUtil.displayHelp();
+                Scanner scan = new Scanner(System.in);
 
                 while(playerClient.serverListener.isRunning) {
 
-                    //DisplayUtil.displayPrompt(warriorClient.getUsername());
                     System.out.print(playerClient.getUsername() + "> ");
                     String userInputMessage = scan.nextLine();
 
@@ -39,13 +45,15 @@ public class Client {
 
     }
 
-
     private static ConnectionInfo createConnectionInformation(String[] args) {
-        if (args.length < 4) {
-            System.out.println("Usage: java Client <host> <port> <username> <password>");
+        if (args.length < 5) {
+            System.out.println("Usage: java Client <host> <port> <-l | -r> <username> <password>");
             return null;
         }
-        ClientModel client = new ClientModel(args[2], args[3], "");
+
+        clientDB = new ClientDatabase("client/" + args[3] + "-Token.txt");
+
+        ClientModel client = new ClientModel(args[3], args[4], clientDB.loadToken());
 
         ConnectionInfo connectionInformation = new ConnectionInfo(args[0], args[1], client);
 

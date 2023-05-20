@@ -9,9 +9,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class PlayerHandler implements Runnable{
-    private Socket socket;
+    public Socket socket;
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
     public ClientModel player;
@@ -26,7 +27,6 @@ public class PlayerHandler implements Runnable{
     public void run() {
         try {
             if (authenticate()) {
-                addToQueue();
                 playGame();
             }
         }
@@ -38,7 +38,6 @@ public class PlayerHandler implements Runnable{
 
     private void addToQueue() {
         Server.addToQueue(this);
-        write(new Message(MessageType.MESSAGE, "JOIN_QUEUE", "Server"));
     }
 
     private void playGame() {
@@ -49,22 +48,41 @@ public class PlayerHandler implements Runnable{
                 switch (message.getMessageType()) {
                     case MESSAGE:
                         if (game != null){
-                            System.out.println("[Game" + game.gameNumber + "] " + player.username + "> " + message.getMessageBody());
-                            broadcastMessage(message);
+                            switch (message.getMessageBody()) {
+                                case ".gp":
+                                    String playerList = "";
+                                    for (PlayerHandler player : game.players) {
+                                        playerList += player.player.username + ", ";
+                                    }
+                                    write(new Message(MessageType.MESSAGE, "Players: " + playerList, "Server"));
+                                    break;
+                                default:
+                                    System.out.println("[" + Server.displayTime.format(new Date()) + "] " + "Game" + game.gameNumber + ": <" + player.username + "> " + message.getMessageBody());
+                                    broadcastMessage(message);
+                                    break;
+                            }
                         }
                         break;
                     case DISCONNECT:
-                        System.out.println("Client " + player.username + " has disconnected");
-                        game.removePlayer(this);
-                        if (game.players.size() == 0){
-                            game.close();
+                        if (game != null) {
+                            System.out.println("[" + Server.displayTime.format(new Date()) + "] " + player.username + " has disconnected");
+                            game.removePlayer(this);
+                            if (game.players.size() == 0) {
+                                game.close();
+                            }
+                            game = null;
+                            closeAllResource();
                         }
-                        game = null;
-                        closeAllResource();
+                        else {
+                            System.out.println("[" + Server.displayTime.format(new Date()) + "] " + player.username + " has disconnected");
+                            Server.removeFromQueue(this);
+                            closeAllResource();
+                        }
+                        Server.serverDB.updateToken(player.username, "-");
                         return;
                 }
             } catch (Exception e) {
-                System.out.println("Client " + player.username + " lost connection");
+                System.out.println("[" + Server.displayTime.format(new Date()) + "] " + player.username + " lost connection");
                 closeAllResource();
                 break;
             }
@@ -81,17 +99,58 @@ public class PlayerHandler implements Runnable{
                 case LOGIN:
                     this.player = authentication.login(message);
                     if (this.player == null){
-                        write(new Message(MessageType.LOGIN, "UNSUCCESSFUL", "server"));
-                        System.out.println("Failed Connection: " + socket);
+                        write(new Message(MessageType.LOGIN, "UNSUCCESSFUL", "Server"));
+                        System.out.println("[" + Server.displayTime.format(new Date()) + "] " + "Failed Connection: " + socket);
                     }
                     else {
-                        write(new Message(MessageType.LOGIN, "SUCCESSFUL", "server"));
-                        System.out.println("Client " + player.username + " has connected");
+                        write(new Message(MessageType.LOGIN, "SUCCESSFUL", player.token));
+                        if (authentication.isReconnect){
+                            int index = 0;
+                            boolean found = false;
+                            for (Game g : Server.activeGames){
+                                for (PlayerHandler p : g.players){
+                                    if (p.player.username.equals(player.username)){
+                                        g.removePlayer(p);
+                                        game = g;
+                                    }
+                                }
+                            }
+                            if (game != null){
+                                game.addPlayer(this);
+                                found = true;
+                                write(new Message(MessageType.MESSAGE, "You have rejoined the game", "Server"));
+                                System.out.println("[" + Server.displayTime.format(new Date()) + "] " + player.username + " has reconnected and rejoined game " + game.gameNumber);
+                            }
+                            if (!found) {
+                                for (int i = 0; i < Server.playerQueue.size(); i++) {
+                                    if (Server.playerQueue.get(i).player.username.equals(player.username)) {
+                                        Server.removeFromQueue(Server.playerQueue.get(i));
+                                        index = i;
+                                    }
+                                }
+                                Server.playerQueue.add(index, this);
+                                write(new Message(MessageType.MESSAGE, "You have rejoined the queue", "Server"));
+                                System.out.println("[" + Server.displayTime.format(new Date()) + "] " + player.username + " has reconnected and rejoined the queue");
+                            }
+
+                        }
+                        else {
+                            addToQueue();
+                            write(new Message(MessageType.MESSAGE, "You have joined the queue", "Server"));
+                            System.out.println("[" + Server.displayTime.format(new Date()) + "] " + player.username + " has connected and joined the queue");
+                        }
                         isValid = true;
                     }
                     break;
                 case REGISTER:
-                    System.out.println("Register");
+                    if (authentication.register(message)){
+                        write(new Message(MessageType.REGISTER, "SUCCESSFUL", "-"));
+                        System.out.println("[" + Server.displayTime.format(new Date()) + "] " + "New registry with username " + message.getMessageBody().split(" ")[0]);
+                    }
+                    else {
+                        write(new Message(MessageType.REGISTER, "UNSUCCESSFUL", "Server"));
+                        System.out.println("[" + Server.displayTime.format(new Date()) + "] " + "Failed to register new client: " + socket);
+                    }
                     break;
             }
 
@@ -139,6 +198,12 @@ public class PlayerHandler implements Runnable{
     private void initializeInputOutputStreams(Socket socket) throws IOException {
         outputStream = new ObjectOutputStream(socket.getOutputStream());
         inputStream = new ObjectInputStream(socket.getInputStream());
+    }
+
+    public void setSocket(Socket socket) throws IOException{
+        this.socket = socket;
+        this.inputStream = new ObjectInputStream(socket.getInputStream());
+        this.outputStream = new ObjectOutputStream(socket.getOutputStream());
     }
 
     private void broadcastMessage(Message message) {

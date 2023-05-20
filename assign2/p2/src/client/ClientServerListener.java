@@ -28,19 +28,30 @@ public class ClientServerListener extends Thread {
 
                 switch (message.getMessageType()) {
                     case MESSAGE:
-                        System.out.println("\n" + message.getToken() + "> " + message.getMessageBody());
-                        System.out.print(username + "> ");
+                            System.out.println("\n" + message.getTokenUsername() + "> " + message.getMessageBody());
+                            System.out.print(username + "> ");
+
                         break;
                     case LOGIN:
-                        if (message.getMessageBody().equals("UNSUCCESSFUL")){
-                            System.out.println("Authentication Failed!");
+                        if (message.getMessageBody().equals("UNSUCCESSFUL")) {
+                            System.out.println("\nServer> Authentication.Login Failed!");
                             isRunning = false;
                             System.exit(0);
+                        } else if (message.getMessageBody().equals("SUCCESSFUL")) {
+                            System.out.println("\nServer> Authentication.Login Success!");
+                            Client.clientDB.saveToken(message.getTokenUsername());
+                            break;
                         }
-                        else if (message.getMessageBody().equals("SUCCESSFUL")){
-                            System.out.println("Authentication Success!");
+                    case REGISTER:
+                        if (message.getMessageBody().equals("UNSUCCESSFUL")) {
+                            System.out.println("\nServer> Authentication.Register Failed!");
+                        } else if (message.getMessageBody().equals("SUCCESSFUL")) {
+                            System.out.println("\nServer> Authentication.Register Success!");
+                            Client.clientDB.saveToken(message.getTokenUsername());
                         }
-                    }
+                        isRunning = false;
+                        System.exit(0);
+                }
             } catch (Exception e) {
                 System.out.println("Server has close the connection: " + e);
                 System.exit(0);

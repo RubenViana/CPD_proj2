@@ -29,7 +29,7 @@ public class ServerDatabase {
         }
     }
 
-    private void saveDB() {
+    public void saveDB() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(this.filepath))) {
             for (ClientModel client : this.clients.values()) {
                 bw.write(client.username + ";" + client.password + ";" + client.token + "\n");
@@ -39,12 +39,22 @@ public class ServerDatabase {
         }
     }
 
+    public boolean registerNewClient(String username, String password) {
+        ClientModel newClient = new ClientModel(username, password, "-");
+        if (this.clients.containsKey(username)) {
+            return false;
+        }
+        this.clients.put(username, newClient);
+        this.saveDB();
+        return true;
+    }
+
     public ClientModel getUser(String username) {
         return this.clients.get(username);
     }
 
-    /*public void updateToken(String username, String newToken) {
-        this.clients.get(username).setLastToken(newToken);
-    }*/
+    public void updateToken(String username, String newToken) {
+        this.clients.get(username).token = newToken;
+    }
 
 }
