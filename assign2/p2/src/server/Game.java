@@ -36,7 +36,7 @@ public class Game {
         for (PlayerHandler player : players) {
             player.game = this;
         }
-        broadcastMessage(new Message(MessageType.MESSAGE, "=== GAME " + gameNumber + " ===", "Game" + gameNumber));
+        broadcastMessage(new Message(MessageType.MESSAGE, "Game " + gameNumber + " started", "Server"));
         /*scheduler.scheduleAtFixedRate(() -> {
             broadcastMessage(new Message(MessageType.MESSAGE, "BLAH", "Game" + gameNumber));
         }, 0, 5, TimeUnit.SECONDS);*/
@@ -83,6 +83,7 @@ public class Game {
 
     public void close() {
         System.out.println("[" + displayTime.format(new Date()) + "] " + "Game " + gameNumber + " has ended");
+        broadcastMessage(new Message(MessageType.MESSAGE, "Game " + gameNumber + " has ended", "Server"));
 
         for (PlayerHandler player : players)
             player.closeAllResource();

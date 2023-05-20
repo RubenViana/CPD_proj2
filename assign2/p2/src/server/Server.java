@@ -141,8 +141,10 @@ public class Server {
                         break;
                     case ".eg":
                         for (Game g : activeGames){
-                            if (g.gameNumber == Integer.parseInt(input[1]))
+                            if (g.gameNumber == Integer.parseInt(input[1])) {
                                 g.close();
+                                break;
+                            }
                         }
                         break;
                 }
