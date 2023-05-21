@@ -50,11 +50,11 @@ public class Server {
                 scheduler.scheduleAtFixedRate(() -> {
                     try {
                         lock.lock();
-                        if (playerQueue.size() >= 2) {
+                        if (playerQueue.size() >= 5) {
                             System.out.println("[" + displayTime.format(new Date()) + "] Starting Game " + ++N_GAMES);
                             ArrayList<PlayerHandler> gamePlayers = new ArrayList<PlayerHandler>();
 
-                            for (int i = 0; i < 2; i++) {
+                            for (int i = 0; i < 5; i++) {
                                 gamePlayers.add(playerQueue.get(0));
                                 removeFromQueue(playerQueue.get(0));
                             }
@@ -112,6 +112,7 @@ public class Server {
                         System.out.println("    .sd -> Shutdown Server");
                         System.out.println("    .lq -> List Player Queue");
                         System.out.println("    .lg -> List Active Games");
+                        System.out.println("    .eg <gameId> -> End Game");
                         break;
                     case ".si":
                         System.out.println("SERVER INFO");

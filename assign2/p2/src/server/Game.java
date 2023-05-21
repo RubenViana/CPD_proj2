@@ -85,8 +85,11 @@ public class Game {
         System.out.println("[" + displayTime.format(new Date()) + "] " + "Game " + gameNumber + " has ended");
         broadcastMessage(new Message(MessageType.MESSAGE, "Game " + gameNumber + " has ended", "Server"));
 
-        for (PlayerHandler player : players)
-            player.closeAllResource();
+        for (PlayerHandler player : players){
+            player.game = null;
+            Server.addToQueue(player);
+        }
+
 
         players.clear();
 
